@@ -1,6 +1,6 @@
 # Telegram Authentication Module
 
-This module provides functionality for handling authentication and validation of initial data received from Telegram. It includes parsing, preparing, validating, and encoding/decoding initial data. It also provides data models for representing Telegram users and initial data.
+This Python package provides an authentication mechanism for Telegram web apps. It implements the algorithm for validating data received from a Telegram web app, ensuring the authenticity and integrity of the data. For detailed information on validating data received via a web app, please refer to the [official Telegram documentation](https://core.telegram.org/bots/webapps#validating-data-received-via-the-web-app).
 
 ## Installation
 
