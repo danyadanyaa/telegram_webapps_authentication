@@ -21,7 +21,6 @@ class TelegramUser(BaseModel):
 class InitialData(BaseModel):
     """
     Represents the initial data received from Telegram.
-
     """
     query_id: str
     user: TelegramUser
@@ -32,7 +31,6 @@ class InitialData(BaseModel):
 class Authenticator:
     """
     Handles authentication and validation of initial data from Telegram.
-
     """
     REQUIRED_KEYS: set = {'query_id', 'user', 'auth_date', 'hash'}
     USER_DATA_KEYS: list = ['id', 'username', 'first_name', 'last_name', 'language_code']
