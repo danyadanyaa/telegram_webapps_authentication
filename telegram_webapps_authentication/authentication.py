@@ -8,6 +8,9 @@ from pydantic import BaseModel
 
 
 class TelegramUser(BaseModel):
+    """
+    Represents a Telegram user.
+    """
     id: int
     first_name: str
     last_name: str
@@ -16,6 +19,10 @@ class TelegramUser(BaseModel):
 
 
 class InitialData(BaseModel):
+    """
+    Represents the initial data received from Telegram.
+
+    """
     query_id: str
     user: TelegramUser
     auth_date: str
@@ -23,16 +30,35 @@ class InitialData(BaseModel):
 
 
 class Authenticator:
+    """
+    Handles authentication and validation of initial data from Telegram.
+
+    """
     REQUIRED_KEYS: set = {'query_id', 'user', 'auth_date', 'hash'}
     USER_DATA_KEYS: list = ['id', 'username', 'first_name', 'last_name', 'language_code']
 
     def __init__(self, bot_token: str):
+        """
+        Initializes the Authenticator with a bot token.
+
+        Args:
+            bot_token (str): Token for the Telegram bot.
+        """
         self.bot_token = bot_token
         self.secret_key = hmac.new("WebAppData".encode(), bot_token.encode(), hashlib.sha256).digest()
 
     def initial_data_parse(self, init_data: str) -> Dict[str, Any]:
         """
-        Parse the initial data from a query string format into a dictionary.
+        Parses the initial data from a query string format into a dictionary.
+
+        Args:
+            init_data (str): Initial data in query string format.
+
+        Returns:
+            Dict[str, Any]: Parsed data as a dictionary.
+
+        Raises:
+            ValueError: If any required keys are missing in the data.
         """
         parsed_data = {}
         for item in init_data.split('&'):
@@ -49,7 +75,17 @@ class Authenticator:
 
     def initial_data_prepare(self, init_data_dict: Dict[str, Any]) -> str:
         """
-        Prepare the cleaned data string by excluding 'hash' key and sorting the remaining key-value pairs.
+        Prepares the cleaned data string by excluding the 'hash' key and sorting the remaining key-value pairs.
+
+        Args:
+            init_data_dict (Dict[str, Any]): Dictionary of initial data.
+
+        Returns:
+            str: Prepared data string.
+
+        Raises:
+            ValueError: If `init_data_dict` is empty or if no data is available after excluding the 'hash' key.
+            TypeError: If any value is not a string.
         """
         if not init_data_dict:
             raise ValueError("init_data_dict cannot be empty")
@@ -71,7 +107,16 @@ class Authenticator:
 
     def extract_user_data(self, init_data: str) -> Dict[str, str]:
         """
-        Extract user-specific data from the initial data.
+        Extracts user-specific data from the initial data.
+
+        Args:
+            init_data (str): Initial data in query string format.
+
+        Returns:
+            Dict[str, str]: Extracted user data.
+
+        Raises:
+            ValueError: If 'user' key is missing in initial data or if user data is not valid JSON.
         """
         init_data_dict = self.initial_data_parse(init_data)
 
@@ -93,7 +138,16 @@ class Authenticator:
 
     def validate_init_data(self, init_data: str) -> bool:
         """
-        Validate the initial data by comparing the provided hash with the computed hash.
+        Validates the initial data by comparing the provided hash with the computed hash.
+
+        Args:
+            init_data (str): Initial data in query string format.
+
+        Returns:
+            bool: True if the data is valid, False otherwise.
+
+        Raises:
+            ValueError: If 'hash' key is not found in `init_data`.
         """
         init_data_dict = self.initial_data_parse(init_data)
         if 'hash' not in init_data_dict:
@@ -106,7 +160,16 @@ class Authenticator:
 
     def get_telegram_user(self, init_data: str) -> TelegramUser:
         """
-        Extract and return a TelegramUser object from the initial data.
+        Extracts and returns a `TelegramUser` object from the initial data.
+
+        Args:
+            init_data (str): Initial data in query string format.
+
+        Returns:
+            TelegramUser: Extracted Telegram user information.
+
+        Raises:
+            ValueError: If `init_data` is not valid.
         """
         if not self.validate_init_data(init_data):
             raise ValueError("init_data is not valid")
@@ -117,7 +180,16 @@ class Authenticator:
 
     def get_initial_data(self, init_data: str) -> InitialData:
         """
-        Extract and return an InitialData object from the initial data.
+        Extracts and returns an `InitialData` object from the initial data.
+
+        Args:
+            init_data (str): Initial data in query string format.
+
+        Returns:
+            InitialData: Extracted initial data information.
+
+        Raises:
+            ValueError: If `init_data` is not valid.
         """
         if not self.validate_init_data(init_data):
             raise ValueError("init_data is not valid")
@@ -129,12 +201,24 @@ class Authenticator:
 
     def encode_init_data(self, data: str) -> str:
         """
-        Encode initial data to base64 format.
+        Encodes initial data to base64 format.
+
+        Args:
+            data (str): Data to be encoded.
+
+        Returns:
+            str: Base64 encoded data.
         """
         return base64.b64encode(data.encode()).decode()
 
     def decode_init_data(self, encoded_data: str) -> str:
         """
-        Decode initial data from base64 format.
+        Decodes initial data from base64 format.
+
+        Args:
+            encoded_data (str): Base64 encoded data.
+
+        Returns:
+            str: Decoded data.
         """
         return base64.b64decode(encoded_data.encode()).decode()
