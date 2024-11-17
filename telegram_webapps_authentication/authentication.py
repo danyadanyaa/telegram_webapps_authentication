@@ -2,10 +2,11 @@ import base64
 import hashlib
 import hmac
 import json
+import time
 from typing import Any, Dict
 from urllib.parse import unquote
 from pydantic import BaseModel
-
+from urllib.parse import parse_qs
 
 class TelegramUser(BaseModel):
     """
@@ -16,7 +17,6 @@ class TelegramUser(BaseModel):
     last_name: str
     username: str
     language_code: str
-
 
 class InitialData(BaseModel):
     """
@@ -71,38 +71,6 @@ class Authenticator:
 
         return parsed_data
 
-    def initial_data_prepare(self, init_data_dict: Dict[str, Any]) -> str:
-        """
-        Prepares the cleaned data string by excluding the 'hash' key and sorting the remaining key-value pairs.
-
-        Args:
-            init_data_dict (Dict[str, Any]): Dictionary of initial data.
-
-        Returns:
-            str: Prepared data string.
-
-        Raises:
-            ValueError: If `init_data_dict` is empty or if no data is available after excluding the 'hash' key.
-            TypeError: If any value is not a string.
-        """
-        if not init_data_dict:
-            raise ValueError("init_data_dict cannot be empty")
-
-        prepared_data = []
-        for k, v in sorted(init_data_dict.items()):
-            if k == 'hash':
-                continue
-            if v is None:
-                raise ValueError(f"Value for key '{k}' is None")
-            if not isinstance(v, str):
-                raise TypeError(f"Value for key '{k}' must be a string, got {type(v).__name__}")
-            prepared_data.append(f"{k}={v}")
-
-        if not prepared_data:
-            raise ValueError("No data to prepare after excluding 'hash' key")
-
-        return '\n'.join(prepared_data)
-
     def extract_user_data(self, init_data: str) -> Dict[str, str]:
         """
         Extracts user-specific data from the initial data.
@@ -147,14 +115,29 @@ class Authenticator:
         Raises:
             ValueError: If 'hash' key is not found in `init_data`.
         """
-        init_data_dict = self.initial_data_parse(init_data)
-        if 'hash' not in init_data_dict:
-            raise ValueError("Hash not found in init_data")
+        parsed_data = {key: unquote(value[0]) for key, value in parse_qs(init_data).items()}
 
-        init_data_cleaned = self.initial_data_prepare(init_data_dict)
-        hash_token = hmac.new(self.secret_key, init_data_cleaned.encode(), hashlib.sha256)
+        received_hash = parsed_data.pop('hash', None)
+        auth_date = int(parsed_data.get('auth_date', 0))
 
-        return hash_token.hexdigest() == init_data_dict['hash']
+        if not received_hash or not auth_date:
+            return False
+        
+        current_time = int(time.time())
+
+        # Hash timed out․
+        if current_time - auth_date > 300:  
+            return False
+        
+        data_check_string = "\n".join(f"{key}={value}" for key, value in sorted(parsed_data.items()))
+
+        computed_hash = hmac.new(
+            key=self.secret_key,
+            msg=data_check_string.encode(),
+            digestmod=hashlib.sha256
+        ).hexdigest()
+
+        return computed_hash == received_hash
 
     def get_telegram_user(self, init_data: str) -> TelegramUser:
         """
