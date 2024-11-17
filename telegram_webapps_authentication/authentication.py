@@ -102,7 +102,7 @@ class Authenticator:
 
         return extracted_data
 
-    def validate_init_data(self, init_data: str) -> bool:
+    def validate_init_data(self, init_data: str, check_time = False) -> bool:
         """
         Validates the initial data by comparing the provided hash with the computed hash.
 
@@ -126,8 +126,9 @@ class Authenticator:
         current_time = int(time.time())
 
         # Hash timed out․
-        if current_time - auth_date > 300:  
-            return False
+        if check_time:
+            if current_time - auth_date > 300 :  
+                return False
         
         data_check_string = "\n".join(f"{key}={value}" for key, value in sorted(parsed_data.items()))
 
